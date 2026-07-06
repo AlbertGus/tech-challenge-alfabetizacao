@@ -1,62 +1,33 @@
 # 📚 Data Lakehouse Educacional: Monitoramento da Alfabetização no Brasil
 
-# 
-
 # 1\. Contexto do Problema e Desafio Educacional
-
-# 
 
 # A alfabetização na idade certa é o pilar fundamental para o desenvolvimento cognitivo e social de uma criança, ditando a sua trajetória acadêmica futura. No Brasil, o acompanhamento deste indicador (muitas vezes mensurado por avaliações como o Saeb) é um desafio logístico e analítico gigantesco devido à dimensão continental do país e à heterogeneidade das redes de ensino.
 
-# 
-
 # O uso do Indicador de Alfabetização permite que gestores identifiquem rapidamente municípios e escolas que estão abaixo da meta estabelecida. O objetivo deste projeto é construir uma Plataforma de Dados Híbrida (Batch e Streaming) escalável, de baixo custo e com alta governança, capaz de centralizar os dados educacionais brutos e transformá-los em insights acionáveis para a tomada de decisão pública.
 
-# 
-
-# 2\. Arquitetura Proposta e Fluxo de Dados
-
-# 
+# 2\. Arquitetura Proposta e Fluxo de Dados 
 
 # A solução foi arquitetada utilizando o padrão Medalhão (Medallion Architecture) em ambiente de nuvem AWS, priorizando serviços gerenciados (Serverless) e armazenamento em Object Store para otimização de custos (FinOps).
-
-# 
-
+ 
 # 2.1. Fluxo de Dados
-
-# 
 
 # Ingestão Híbrida:
 
-# 
-
 # Batch: Carga histórica de dados estruturados (Municípios, Metas Nacionais e Estaduais) provenientes da Base dos Dados ingeridos via scripts Python.
-
-# 
 
 # Streaming: Eventos de avaliações de alunos gerados em tempo real, enviados diretamente via API (S3 Direct Push).
 
-# 
-
 # Bronze Layer (Raw): Dados brutos pousam no Amazon S3 em seus formatos originais (.csv e .json), particionados por data de ingestão.
-
-# 
 
 # Silver Layer (Trusted): Scripts de processamento (Micro-batching) extraem os dados da Bronze, aplicam limpeza de encoding, tratam nulos, validam chaves (Data Quality/DLQ) e convertem os arquivos para o formato colunar otimizado Parquet.
 
-# 
-
 # Gold Layer (Analytics): Junção (Join) das tabelas de resultados com as metas, agregando os dados em KPIs de negócio (ex: Delta da Meta, Status, Média em tempo real).
 
-# 
-
-# Consumo: Os dados da Camada Gold são lidos via Amazon Athena (SQL Serverless) e disponibilizados para Dashboards e Cientistas de Dados.
-
-# 
+# Consumo: Os dados da Camada Gold são lidos via Amazon Athena (SQL Serverless) e disponibilizados para Dashboards e Cientistas de Dados. 
 
 # 2.2. Diagrama da Pipeline
-
-# 
+ 
 
 # graph TD
 
@@ -67,8 +38,6 @@
 # &#x20;       B\[Avaliações de Alunos - Streaming] -->|Python / JSON| C
 
 # &#x20;   end
-
-# 
 
 # &#x20;   subgraph AWS Cloud Data Lakehouse
 
