@@ -28,28 +28,8 @@ Consumo: Os dados da Camada Gold são lidos via Amazon Athena (SQL Serverless) e
 
 2.2. Diagrama da Pipeline
 
-graph TD
-    subgraph Fontes de Dados
-        A[Bases Históricas - Batch] -->|Python / CSV| C
-        B[Avaliações de Alunos - Streaming] -->|Python / JSON| C
-    end
+<img width="5277" height="4622" alt="Data Lakehouse Pipeline" src="https://github.com/user-attachments/assets/7e18ee3e-a526-4245-b5dd-f9b8f9370965" />
 
-    subgraph AWS Cloud Data Lakehouse
-        C[(S3 Bronze Layer)] -->|Validação & Limpeza| D
-        D[(S3 Silver Layer)] -->|Agregação & Joins| E
-        E[(S3 Gold Layer)]
-        
-        subgraph Governança e FinOps
-            C -->|Falha de Schema/ID| F[S3 Quarentena / DLQ]
-            G[Módulo de Observabilidade] -->|Logs JSON| E
-        end
-    end
-
-    subgraph Consumo Analítico
-        E -->|Queries Serverless| H(Amazon Athena)
-        H --> I[Dashboards de BI]
-        H --> J[Modelos de Machine Learning]
-    end
 
 
 3. Tecnologias Utilizadas
