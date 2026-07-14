@@ -14,22 +14,19 @@ A solução foi arquitetada utilizando o padrão Medalhão (Medallion Architectu
 
 Ingestão Híbrida:
 
-Batch: Carga histórica de dados estruturados (Municípios, Metas Nacionais e Estaduais) provenientes da Base dos Dados ingeridos via scripts Python.
+Batch: Carga histórica de dados estruturados (Municípios, Metas Nacionais e Estaduais) provenientes da Base dos Dados ingeridos via scripts Python agendados.
 
-Streaming: Eventos de avaliações de alunos gerados em tempo real, enviados diretamente via API (S3 Direct Push).
+Streaming (Tempo Real): Eventos de avaliações de alunos gerados em tempo real, enviados diretamente via API (S3 Direct Push).
 
 Bronze Layer (Raw): Dados brutos pousam no Amazon S3 em seus formatos originais (.csv e .json), particionados por data de ingestão.
 
-Silver Layer (Trusted): Scripts de processamento (Micro-batching) extraem os dados da Bronze, aplicam limpeza de encoding, tratam nulos, validam chaves (Data Quality/DLQ) e convertem os arquivos para o formato colunar otimizado Parquet.
+Silver Layer (Trusted): Scripts de processamento extraem os dados da Bronze, aplicam limpeza de encoding, tratam nulos, validam chaves (Data Quality/DLQ) e convertem os arquivos para o formato colunar otimizado Parquet.
 
-Gold Layer (Analytics): Junção (Join) das tabelas de resultados com as metas, agregando os dados em KPIs de negócio (ex: Delta da Meta, Status, Média em tempo real).
-
-Consumo: Os dados da Camada Gold são lidos via Amazon Athena (SQL Serverless) e disponibilizados para Dashboards e Cientistas de Dados.
+Gold Layer (Analytics / Event-Driven): A Camada Gold é atualizada por meio de uma Arquitetura Orientada a Eventos. Quando um arquivo processado "pinga" na camada Silver, um evento (AWS S3 Trigger/EventBridge) aciona automaticamente o pipeline Gold (lambda_handler), recalculando os KPIs em tempo real. Os dados agregados são consumidos via Amazon Athena.
 
 2.2. Diagrama da Pipeline
 
 <img width="5277" height="4622" alt="Data Lakehouse Pipeline" src="https://github.com/user-attachments/assets/7e18ee3e-a526-4245-b5dd-f9b8f9370965" />
-
 
 
 3. Tecnologias Utilizadas
@@ -38,13 +35,17 @@ Linguagem: Python 3 (Pandas para processamento em memória, Boto3 para integraç
 
 Armazenamento (Data Lake): Amazon S3 (Econômico, durável, ideal para arquiteturas particionadas).
 
-Processamento: Python / Micro-batching (Simulando o comportamento de instâncias de processamento como o AWS Lambda/Glue).
+Processamento: Python simulando instâncias de AWS Lambda (Orientado a Eventos) e AWS Glue.
 
 Motor de Consultas: Amazon Athena (Serverless, cobra apenas por terabyte escaneado).
 
 Formatos de Arquivo: JSON/CSV (Ingestão) e Parquet (Armazenamento analítico).
 
 4. Decisões Arquiteturais e Trade-offs
+
+Arquitetura Orientada a Eventos (Event-Driven) vs Agendamento (Scheduler): Na camada Gold, para o processamento das avaliações em tempo real, optamos por um design orientado a eventos em vez de rotinas em Batch (Cron). Assim que o dado é tratado na Silver, um "Trigger" do S3 dispara a função AWS Lambda da Gold. O Trade-off: Custo e Latência reduzidos, pois a máquina (Lambda) só é ativada se houver dados novos, processando a informação instantaneamente sem ciclos ociosos de servidor.
+
+🛡️ FinOps na Prática (Simulação da Função Lambda): Para manter o projeto dentro das rígidas diretrizes de custo zero, a função Lambda não foi instanciada diretamente no painel da AWS Cloud para evitar cobranças indevidas de execução. No entanto, o código da Camada Gold (pipeline_gold_streaming.py) foi encapsulado exatamente no formato lambda_handler(event, context) exigido pela Amazon. Adicionamos ao final do script um simulador de gatilhos (Mock Event) que procura a última atualização na Silver e dispara a função automaticamente, provando o sucesso técnico do conceito arquitetural.
 
 Batch vs. Streaming: Utilizamos uma abordagem híbrida Lambda/Kappa adaptada. Os dados de metas e diretórios (que mudam anualmente) utilizam Batch. Já as notas dos alunos necessitam de Streaming para identificação imediata de anomalias na infraestrutura de provas.
 
